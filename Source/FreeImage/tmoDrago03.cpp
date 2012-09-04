@@ -201,48 +201,6 @@ ToneMappingDrago03(FIBITMAP *dib, const float maxLum, const float avgLum, float 
 	return TRUE;
 }
 
-/**
-Custom gamma correction based on the ITU-R BT.709 standard
-@param dib RGBF image to be corrected
-@param gammaval Gamma value (2.2 is a good default value)
-@return Returns TRUE if successful, returns FALSE otherwise
-*/
-static BOOL 
-REC709GammaCorrection(FIBITMAP *dib, const float gammaval) {
-	if(FreeImage_GetImageType(dib) != FIT_RGBF)
-		return FALSE;
-
-	float slope = 4.5F;
-	float start = 0.018F;
-	
-	const float fgamma = (float)((0.45 / gammaval) * 2);
-	if(gammaval >= 2.1F) {
-		start = (float)(0.018 / ((gammaval - 2) * 7.5));
-		slope = (float)(4.5 * ((gammaval - 2) * 7.5));
-	} else if (gammaval <= 1.9F) {
-		start = (float)(0.018 * ((2 - gammaval) * 7.5));
-		slope = (float)(4.5 / ((2 - gammaval) * 7.5));
-	}
-
-	const unsigned width  = FreeImage_GetWidth(dib);
-	const unsigned height = FreeImage_GetHeight(dib);
-	const unsigned pitch  = FreeImage_GetPitch(dib);
-
-	BYTE *bits = (BYTE*)FreeImage_GetBits(dib);
-	for(unsigned y = 0; y < height; y++) {
-		float *pixel = (float*)bits;
-		for(unsigned x = 0; x < width; x++) {
-			for(int i = 0; i < 3; i++) {
-				*pixel = (*pixel <= start) ? *pixel * slope : (1.099F * pow(*pixel, fgamma) - 0.099F);
-				pixel++;
-			}
-		}
-		bits += pitch;
-	}
-
-	return TRUE;
-}
-
 // ----------------------------------------------------------
 //  Main algorithm
 // ----------------------------------------------------------

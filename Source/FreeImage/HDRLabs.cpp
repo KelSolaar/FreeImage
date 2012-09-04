@@ -1,8 +1,9 @@
 // ==========================================================
-// High Dynamic Range bitmap conversion routines
+// HDRLabs Functions.
 //
 // Design and implementation by
-// - Hervé Drolon (drolon@infonie.fr)
+// - HervÃ© Drolon (drolon@infonie.fr)
+// - Thomas Mansencal (thomas.mansencal@gmail.com)
 //
 // This file is part of FreeImage 3
 //
@@ -19,30 +20,38 @@
 // Use at your own risk!
 // ==========================================================
 
-#ifndef TONE_MAPPING_H
-#define TONE_MAPPING_H
+#include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "FreeImage.h"
+#include "Utilities.h"
+#include "ToneMapping.h"
 
-BOOL ConvertInPlaceRGBFToYxy(FIBITMAP *dib);
-BOOL ConvertInPlaceYxyToRGBF(FIBITMAP *dib);
-FIBITMAP* ConvertRGBFToY(FIBITMAP *src);
+/**
+Converts An HDRI Bitmap To A LDRI One.
+@param src Input RGB16 or RGB[A]F image.
+@param gamma Gamma correction.
+@return Returns a 24-bit RGB image if successful, returns NULL otherwise.
+*/
+FIBITMAP* DLL_CALLCONV 
+FreeImage_HDRLabs_ConvertToLdr(FIBITMAP *src, double gamma) {
+	if(!src) return NULL;
 
-BOOL LuminanceFromYxy(FIBITMAP *dib, float *maxLum, float *minLum, float *worldLum);
-BOOL LuminanceFromY(FIBITMAP *dib, float *maxLum, float *minLum, float *Lav, float *Llav);
+	FIBITMAP *dib = NULL;
 
-void NormalizeY(FIBITMAP *Y, float minPrct, float maxPrct);
+	dib = FreeImage_ConvertToRGBF(src);
+	if(!dib) return NULL;
 
-FIBITMAP* ClampConvertRGBFTo24(FIBITMAP *src);
+	if(gamma != 1) {
+		REC709GammaCorrection(dib, (float)gamma);
+	}
+	
+	FIBITMAP *dst = ClampConvertRGBFTo24(dib);
 
-BOOL ConvertInPlaceYxyToRGBF(FIBITMAP *dib);
+	FreeImage_Unload(dib);
+	
+	FreeImage_CloneMetadata(dst, src);
 
-BOOL REC709GammaCorrection(FIBITMAP *dib, const float gammaval);
-
-#ifdef __cplusplus
+	FreeImage_Unload(src);
+	
+	return dst;
 }
-#endif
-
-#endif // TONE_MAPPING_H
